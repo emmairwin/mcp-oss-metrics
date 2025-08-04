@@ -1,0 +1,47 @@
+{
+  "name": "oss-metrics",
+  "displayName": "OSS Metrics: GitHub Repository Analysis",
+  "description": "Analyze GitHub repositories for contributor activity, sentiment analysis, and project health metrics",
+  "version": "1.0.0",
+  "author": "Emma Irwin",
+  "license": "MIT",
+  "homepage": "https://github.com/emmairwin/mcp-oss-metrics",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/emmairwin/mcp-oss-metrics.git"
+  },
+  "runtime": "python",
+  "entrypoint": "mcp_server.py",
+  "configuration": [
+    {
+      "name": "github_token",
+      "displayName": "GitHub Token",
+      "description": "Personal Access Token for GitHub API access",
+      "type": "string",
+      "required": true,
+      "sensitive": true,
+      "placeholder": "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+  ],
+  "tools": [
+    {
+      "name": "analyze_repository_contributors",
+      "description": "Analyze a single GitHub repository for detailed contributor activity over a specified time period"
+    },
+    {
+      "name": "analyze_multiple_repositories", 
+      "description": "Analyze multiple GitHub repositories and generate a comparative analysis"
+    }
+  ],
+  "categories": ["productivity", "development", "analytics"],
+  "keywords": ["github", "contributors", "analytics", "open-source", "metrics", "sentiment-analysis"],
+  "permissions": {
+    "network": {
+      "domains": ["api.github.com", "github.com"],
+      "description": "Required to access GitHub API for repository analysis"
+    }
+  },
+  "requirements": {
+    "python": ">=3.8"
+  }
+}
