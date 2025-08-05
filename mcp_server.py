@@ -41,7 +41,7 @@ def main():
             return [
                 Tool(
                     name="analyze_repository_contributors",
-                    description="Analyze a GitHub repository for detailed contributor activity, sentiment data, and repository statistics over a specified time period",
+                    description="Analyze a GitHub repository for detailed contributor activity and repository statistics over a specified time period. Optionally includes sentiment analysis of contributor comments.",
                     inputSchema={
                         "type": "object",
                         "properties": {
@@ -55,6 +55,10 @@ def main():
                                 "maximum": 365,
                                 "default": 365,
                                 "description": "Number of days to look back for activity analysis (1-365 days)"
+                            },
+                            "include_sentiment": {
+                                "type": "boolean",
+                                "description": "Whether to include sentiment analysis of contributor comments (slower but more detailed). Default: false"
                             }
                         },
                         "required": ["repository_url"]
@@ -71,7 +75,10 @@ def main():
                 try:
                     repository_url = arguments.get("repository_url")
                     analysis_days = arguments.get("analysis_days", 365)
-                    logger.info(f"Analyzing repository: {repository_url} (last {analysis_days} days)")
+                    include_sentiment = arguments.get("include_sentiment", False)
+                    
+                    sentiment_msg = "with sentiment analysis" if include_sentiment else "without sentiment analysis"
+                    logger.info(f"Analyzing repository: {repository_url} (last {analysis_days} days, {sentiment_msg})")
                     
                     if not repository_url:
                         return [TextContent(
@@ -83,12 +90,26 @@ def main():
                     analyzer = ProjectRiskAnalyzer()
                     analyzer.analysis_window_days = analysis_days
                     
-                    # Get analysis
+                    # Set performance mode based on sentiment analysis request
+                    analyzer.enable_fast_mode = not include_sentiment  # Fast mode when sentiment is NOT requested
+                    
+                    # Get analysis with timeout protection
                     logger.info("Starting analysis...")
-                    analysis_result = await analyzer.analyze_single_repository(
-                        repo_url=repository_url
-                    )
-                    logger.info(f"Analysis completed, result type: {type(analysis_result)}")
+                    try:
+                        # Set timeout based on whether sentiment analysis is requested
+                        timeout_seconds = 120.0 if include_sentiment else 45.0
+                        analysis_result = await asyncio.wait_for(
+                            analyzer.analyze_single_repository(repo_url=repository_url),
+                            timeout=timeout_seconds
+                        )
+                        logger.info(f"Analysis completed, result type: {type(analysis_result)}")
+                    except asyncio.TimeoutError:
+                        logger.warning("Analysis timed out, returning partial results")
+                        timeout_msg = "with sentiment analysis" if include_sentiment else "without sentiment analysis"
+                        return [TextContent(
+                            type="text",
+                            text=f"Analysis timed out ({timeout_msg}). Repository analysis is too complex for current time limits. Try reducing analysis_days parameter or use a smaller repository."
+                        )]
                     
                     # Convert to dict if it's not already
                     if hasattr(analysis_result, '__dict__'):

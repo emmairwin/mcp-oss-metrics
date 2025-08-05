@@ -36,6 +36,7 @@ class ProjectRiskAnalyzer:
         self.github_api_url = os.getenv("GITHUB_API_URL", "https://api.github.com")
         self.analysis_window_days = 365  # Default to last year
         self.custom_domains = custom_domains or []  # User-provided company domains
+        self.enable_fast_mode = False  # Skip time-intensive sentiment analysis when True
         
         # Define email domain categories
         self.company_domains = {
@@ -299,10 +300,15 @@ class ProjectRiskAnalyzer:
         """Add sentiment analysis to contributor data"""
         # Count contributors eligible for sentiment analysis
         eligible_contributors = [login for login, data in contributors.items() if data["total_activity"] >= 10]
-        # Analyze sentiment for contributors with 10+ activities
         
+        # Limit sentiment analysis to top 10 contributors to prevent timeouts
+        eligible_contributors = sorted(eligible_contributors, 
+                                     key=lambda login: contributors[login]["total_activity"], 
+                                     reverse=True)[:10]
+        
+        # Analyze sentiment for contributors with 10+ activities
         for login, contributor_data in contributors.items():
-            if contributor_data["total_activity"] >= 10:  # Only analyze sentiment for highly active contributors
+            if login in eligible_contributors:  # Only analyze top contributors
                 comments = await self._fetch_contributor_comments(owner, repo, login)
                 
                 if comments:
@@ -979,8 +985,19 @@ class ProjectRiskAnalyzer:
             else:
                 contributor["activity_trend"] = "insufficient_data"
         
-        # Add sentiment analysis for active contributors
-        await self._analyze_contributor_sentiment(owner, repo, active_contributors)
+        # Add sentiment analysis for active contributors (skip in fast mode)
+        if not self.enable_fast_mode:
+            await self._analyze_contributor_sentiment(owner, repo, active_contributors)
+        else:
+            # In fast mode, add placeholder sentiment data
+            for login, data in active_contributors.items():
+                data["sentiment_analysis"] = {
+                    "average_polarity": 0.0,
+                    "average_subjectivity": 0.0,
+                    "comments_analyzed": 0,
+                    "sentiment_trend": "neutral",
+                    "note": "Sentiment analysis skipped in fast mode"
+                }
         
         # Calculate overall repository statistics
         repo_stats = self._calculate_repository_statistics(recent_issues, recent_commits)

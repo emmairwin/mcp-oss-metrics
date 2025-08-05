@@ -14,7 +14,12 @@ A Model Context Protocol (MCP) server that analyzes GitHub repositories for cont
 ## Tools
 
 ### `analyze_repository_contributors`
-Analyze a single GitHub repository for detailed contributor activity and metrics.
+Analyze a single GitHub repository for detailed contributor activity and metrics. 
+
+**Parameters:**
+- `repository_url` (required): GitHub repository URL to analyze
+- `analysis_days` (optional): Number of days to look back (1-365, default: 365)  
+- `include_sentiment` (optional): Whether to include sentiment analysis (default: false, slower but more detailed)
 
 ### `analyze_multiple_repositories` 
 Analyze and compare multiple GitHub repositories.
@@ -108,10 +113,13 @@ Add to your Claude Desktop MCP configuration:
 
 Ask Claude to analyze repositories:
 - "Analyze the contributors of https://github.com/microsoft/vscode for the last 90 days"
+- "Analyze https://github.com/facebook/react with sentiment analysis included"
 - "Compare contributor activity between https://github.com/facebook/react and https://github.com/vuejs/vue"
 - "What are the sustainability risks for this repository?"
-- user specific 'has Emma Irwin contributed to x repository in the last 100 days?
-- user specific 'is Emma's contribution activity increasing or decreasing?'
+- "Has Emma Irwin contributed to x repository in the last 100 days?"
+- "Is Emma's contribution activity increasing or decreasing?"
+
+**Note:** Sentiment analysis is optional and significantly slower. Only request it when you need detailed sentiment insights about contributor interactions.
 
 ## Environment Variables
 
